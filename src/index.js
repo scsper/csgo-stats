@@ -61,7 +61,7 @@ function calculateRecordBasedOnAdr(lines) {
 
     lines.forEach(line => {
         const adr = parseFloat(line[29]);
-        const outcome = line[45];
+        const outcome = getOutcome(line[45]);
         let recordToModify;
 
         if (adr >= 90) {
@@ -72,31 +72,95 @@ function calculateRecordBasedOnAdr(lines) {
             recordToModify = recordBasedonAdr.lessThan80;
         }
 
-        if (outcome === WIN) {
-            recordToModify[0]++;
-        } else if (outcome === LOSS) {
-            recordToModify[1]++;
-        } else {
-            recordToModify[2]++;
-        }
+        updateRecord(recordToModify, outcome);
     });
 
     return recordBasedonAdr;
 }
 
+function calculateRecordBasedOnFriends(lines) {
+    const recordBasedOnFriends = {};
+
+    lines.forEach(line => {
+        const outcome = getOutcome(line[45]);
+        const friends = getFriends(line[45]);
+
+        friends.forEach(friend => {
+            if (!recordBasedOnFriends.hasOwnProperty(friend)) {
+                recordBasedOnFriends[friend] = [0, 0, 0];
+            }
+
+            updateRecord(recordBasedOnFriends[friend], outcome);
+        });
+
+        if (friends.length > 1) {
+            const allFriendsInMatch = friends.join(',');
+
+            if (!recordBasedOnFriends.hasOwnProperty(allFriendsInMatch)) {
+                recordBasedOnFriends[allFriendsInMatch] = [0, 0, 0];
+            }
+
+            updateRecord(recordBasedOnFriends[allFriendsInMatch], outcome);
+        }
+    });
+
+    return recordBasedOnFriends;
+}
+
+/**
+ * Note: this function modifies the reference of record
+ */
+function updateRecord(record, outcome) {
+    if (outcome === WIN) {
+        record[0]++;
+    } else if (outcome === LOSS) {
+        record[1]++;
+    } else {
+        record[2]++;
+    }
+}
+
+function getOutcome(comment) {
+    return comment.split('|')[0].trim();
+}
+
+function getFriends(comment) {
+    let friends = comment.split('|');
+
+    if (friends.length <= 1) {
+        return [];
+    }
+
+    friends = friends[1];
+
+    return friends.split(':').map(friend => friend.trim());
+}
+
 function printRecordBasedOnAdr(recordBasedonAdr) {
     const {lessThan80, between80And90, greaterThan90} = recordBasedonAdr;
 
+    console.log('\nRecord based on ADR');
+    console.log('------------------------');
     console.log('ADR < 80:', formatRecord(lessThan80));
     console.log('80 < ADR < 90:', formatRecord(between80And90));
     console.log('90 < ADR:', formatRecord(greaterThan90));
+}
+
+function printRecordBasedOnFriends(recordBasedOnFriends) {
+    console.log('\nRecord based on friends');
+    console.log('------------------------');
+
+    Object.keys(recordBasedOnFriends).forEach(friends => {
+        console.log(`${friends}: ${formatRecord(recordBasedOnFriends[friends])}`);
+    });
 }
 
 function formatRecord(record) {
     return `${record[0]}-${record[1]}-${record[2]}`;
 }
 
-readAndParseCsv('./csv/csgo_stats100616.csv').then(lines => {
+readAndParseCsv('./csv/csgo_stats100816.csv').then(lines => {
     checkHeadings(lines.shift());
     printRecordBasedOnAdr(calculateRecordBasedOnAdr(lines));
+    printRecordBasedOnFriends(calculateRecordBasedOnFriends(lines));
 }).catch(err => console.log(err));
