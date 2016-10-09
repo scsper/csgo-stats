@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import Record from './record';
 
 const HEADINGS = {
     5: 'Map',
@@ -13,9 +14,6 @@ const HEADINGS = {
     29: 'Average Damage Per Round',
     45: 'Comment'
 };
-
-const WIN = 'win';
-const LOSS = 'loss';
 
 function checkHeadings(headingsFromCsv) {
     const headingsMapFromCsv = headingsFromCsv.reduce((map, heading, index) => {
@@ -54,25 +52,25 @@ function readAndParseCsv(csvPath) {
 
 function calculateRecordBasedOnAdr(lines) {
     const recordBasedonAdr = {
-        lessThan80: [0, 0, 0],
-        between80And90: [0, 0, 0],
-        greaterThan90: [0, 0, 0]
+        lessThan80: new Record(),
+        between80And90: new Record(),
+        greaterThan90: new Record()
     };
 
     lines.forEach(line => {
         const adr = parseFloat(line[29]);
         const outcome = getOutcome(line[45]);
-        let recordToModify;
+        let record;
 
         if (adr >= 90) {
-            recordToModify = recordBasedonAdr.greaterThan90;
+            record = recordBasedonAdr.greaterThan90;
         } else if (adr < 90 && adr >= 80) {
-            recordToModify = recordBasedonAdr.between80And90;
+            record = recordBasedonAdr.between80And90;
         } else {
-            recordToModify = recordBasedonAdr.lessThan80;
+            record = recordBasedonAdr.lessThan80;
         }
 
-        updateRecord(recordToModify, outcome);
+        record.update(outcome);
     });
 
     return recordBasedonAdr;
@@ -87,37 +85,24 @@ function calculateRecordBasedOnFriends(lines) {
 
         friends.forEach(friend => {
             if (!recordBasedOnFriends.hasOwnProperty(friend)) {
-                recordBasedOnFriends[friend] = [0, 0, 0];
+                recordBasedOnFriends[friend] = new Record();
             }
 
-            updateRecord(recordBasedOnFriends[friend], outcome);
+            recordBasedOnFriends[friend].update(outcome);
         });
 
         if (friends.length > 1) {
             const allFriendsInMatch = friends.join(',');
 
             if (!recordBasedOnFriends.hasOwnProperty(allFriendsInMatch)) {
-                recordBasedOnFriends[allFriendsInMatch] = [0, 0, 0];
+                recordBasedOnFriends[allFriendsInMatch] = new Record();
             }
 
-            updateRecord(recordBasedOnFriends[allFriendsInMatch], outcome);
+            recordBasedOnFriends[allFriendsInMatch].update(outcome);
         }
     });
 
     return recordBasedOnFriends;
-}
-
-/**
- * Note: this function modifies the reference of record
- */
-function updateRecord(record, outcome) {
-    if (outcome === WIN) {
-        record[0]++;
-    } else if (outcome === LOSS) {
-        record[1]++;
-    } else {
-        record[2]++;
-    }
 }
 
 function getOutcome(comment) {
@@ -141,9 +126,9 @@ function printRecordBasedOnAdr(recordBasedonAdr) {
 
     console.log('\nRecord based on ADR');
     console.log('------------------------');
-    console.log('ADR < 80:', formatRecord(lessThan80));
-    console.log('80 < ADR < 90:', formatRecord(between80And90));
-    console.log('90 < ADR:', formatRecord(greaterThan90));
+    console.log('ADR < 80:', lessThan80.format());
+    console.log('80 < ADR < 90:', between80And90.format());
+    console.log('90 < ADR:', greaterThan90.format());
 }
 
 function printRecordBasedOnFriends(recordBasedOnFriends) {
@@ -151,12 +136,8 @@ function printRecordBasedOnFriends(recordBasedOnFriends) {
     console.log('------------------------');
 
     Object.keys(recordBasedOnFriends).forEach(friends => {
-        console.log(`${friends}: ${formatRecord(recordBasedOnFriends[friends])}`);
+        console.log(`${friends}: ${recordBasedOnFriends[friends].format()}`);
     });
-}
-
-function formatRecord(record) {
-    return `${record[0]}-${record[1]}-${record[2]}`;
 }
 
 readAndParseCsv('./csv/csgo_stats100816.csv').then(lines => {
