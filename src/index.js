@@ -1,8 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import Record from './record';
+import Game from './game';
 
 const HEADINGS = {
+    1: 'ID',
     5: 'Map',
     21: 'Kills',
     22: 'Assists',
@@ -50,16 +52,15 @@ function readAndParseCsv(csvPath) {
     });
 }
 
-function calculateRecordBasedOnAdr(lines) {
+function calculateRecordBasedOnAdr(games) {
     const recordBasedonAdr = {
         lessThan80: new Record(),
         between80And90: new Record(),
         greaterThan90: new Record()
     };
 
-    lines.forEach(line => {
-        const adr = parseFloat(line[29]);
-        const outcome = getOutcome(line[45]);
+    games.forEach(game => {
+        const adr = game.adr;
         let record;
 
         if (adr >= 90) {
@@ -70,55 +71,36 @@ function calculateRecordBasedOnAdr(lines) {
             record = recordBasedonAdr.lessThan80;
         }
 
-        record.update(outcome);
+        record.update(game.outcome);
     });
 
     return recordBasedonAdr;
 }
 
-function calculateRecordBasedOnFriends(lines) {
+function calculateRecordBasedOnFriends(games) {
     const recordBasedOnFriends = {};
 
-    lines.forEach(line => {
-        const outcome = getOutcome(line[45]);
-        const friends = getFriends(line[45]);
-
-        friends.forEach(friend => {
+    games.forEach(game => {
+        game.friends.forEach(friend => {
             if (!recordBasedOnFriends.hasOwnProperty(friend)) {
                 recordBasedOnFriends[friend] = new Record();
             }
 
-            recordBasedOnFriends[friend].update(outcome);
+            recordBasedOnFriends[friend].update(game.outcome);
         });
 
-        if (friends.length > 1) {
-            const allFriendsInMatch = friends.join(',');
+        if (game.isPlayedWithMultipleFriends()) {
+            const allFriendsInMatch = game.getAllFriendsInMatch();
 
             if (!recordBasedOnFriends.hasOwnProperty(allFriendsInMatch)) {
                 recordBasedOnFriends[allFriendsInMatch] = new Record();
             }
 
-            recordBasedOnFriends[allFriendsInMatch].update(outcome);
+            recordBasedOnFriends[allFriendsInMatch].update(game.outcome);
         }
     });
 
     return recordBasedOnFriends;
-}
-
-function getOutcome(comment) {
-    return comment.split('|')[0].trim();
-}
-
-function getFriends(comment) {
-    let friends = comment.split('|');
-
-    if (friends.length <= 1) {
-        return [];
-    }
-
-    friends = friends[1];
-
-    return friends.split(':').map(friend => friend.trim());
 }
 
 function printRecordBasedOnAdr(recordBasedonAdr) {
@@ -142,6 +124,9 @@ function printRecordBasedOnFriends(recordBasedOnFriends) {
 
 readAndParseCsv('./csv/csgo_stats100816.csv').then(lines => {
     checkHeadings(lines.shift());
-    printRecordBasedOnAdr(calculateRecordBasedOnAdr(lines));
-    printRecordBasedOnFriends(calculateRecordBasedOnFriends(lines));
+    const games = makeGames(lines);
+    printRecordBasedOnAdr(calculateRecordBasedOnAdr(games));
+    printRecordBasedOnFriends(calculateRecordBasedOnFriends(games));
 }).catch(err => console.log(err));
+
+const makeGames = lines => lines.map(data => new Game(data));
