@@ -1,6 +1,17 @@
 import Record from '../record';
 
-export const printRecordBasedOnMaps = games => print(calculateRecordBasedOnMaps(games));
+export const printRecordBasedOnMaps = (games) =>
+    print(
+        calculateRecordBasedOnMaps(games),
+        'Record based on maps'
+    );
+
+export const printRecordBasedOnMapsTable = (games, indentation) =>
+    print(
+        calculateRecordBasedOnMaps(games),
+        '',
+        indentation
+    );
 
 function calculateRecordBasedOnMaps(games) {
     const recordBasedOnMaps = {
@@ -21,11 +32,17 @@ function calculateRecordBasedOnMaps(games) {
     }, recordBasedOnMaps);
 }
 
-function print(recordBasedOnMaps) {
-    console.log('\nRecord based on maps');
-    console.log('------------------------');
+function print(recordBasedOnMaps, title = '', indentation = '') {
+    if (title) {
+        console.log(`\n${title}`);
+        console.log('------------------------');
+    }
 
     Object.keys(recordBasedOnMaps).forEach(map => {
-        console.log(`${map}: ${recordBasedOnMaps[map].format()}`);
+        const record = recordBasedOnMaps[map];
+
+        if (!record.isEmpty()) {
+            console.log(`${indentation}${map}: ${record.format()}`);
+        }
     });
 }

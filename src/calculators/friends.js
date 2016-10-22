@@ -1,15 +1,16 @@
 import Record from '../record';
+import {printRecordBasedOnMapsTable} from './maps';
 
 export const printRecordBasedOnIndividualFriends =
     individualFriendsToGamesMap => print(
         'Record based on individual friends',
-        calculateRecordsBasedOnFriends(individualFriendsToGamesMap)
+        individualFriendsToGamesMap
     );
 
 export const printRecordBasedOnFriendCombinations =
     friendCombinationsToGamesMap => print(
         'Record based on friend combinations',
-        calculateRecordsBasedOnFriends(friendCombinationsToGamesMap)
+        friendCombinationsToGamesMap
     );
 
 function calculateRecordsBasedOnFriends(friendMap) {
@@ -27,11 +28,17 @@ function calculateRecordsBasedOnFriends(friendMap) {
     return recordBasedOnFriends;
 }
 
-function print(string, recordBasedOnFriends) {
+function print(string, friendToGamesMap) {
     console.log(`\n${string}`);
     console.log('------------------------');
 
-    Object.keys(recordBasedOnFriends).forEach(friends => {
-        console.log(`${friends}: ${recordBasedOnFriends[friends].format()}`);
+    Object.keys(friendToGamesMap).forEach(friend => {
+        const games = friendToGamesMap[friend];
+        const record = new Record();
+
+        games.forEach(game => record.update(game.outcome));
+
+        console.log(`${friend}: ${record.format()}`);
+        printRecordBasedOnMapsTable(games, '  ');
     });
 }

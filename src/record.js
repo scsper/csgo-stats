@@ -18,6 +18,10 @@ export default class Record {
         }
     }
 
+    isEmpty() {
+        return !this.wins && !this.losses && !this.ties;
+    }
+
     format(record) {
         return `${this.wins}-${this.losses}-${this.ties}`;
     }
