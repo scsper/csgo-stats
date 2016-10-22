@@ -3,6 +3,7 @@ export default class Game {
         const commentPieces = data[45].split('|');
 
         this.id = data[1];
+        this.map = data[5];
         this.adr = parseFloat(data[29]);
         this.outcome = commentPieces[0].trim();
         this.friends = commentPieces.length > 1 ? commentPieces[1].split(':').map(friend => friend.trim()) : [];

@@ -4,6 +4,7 @@ import Record from './record';
 import Game from './game';
 import {printRecordBasedOnAdr} from './calculators/adr';
 import {printRecordBasedOnFriends} from './calculators/friends';
+import {printRecordBasedOnMaps} from './calculators/maps';
 
 const HEADINGS = {
     1: 'ID',
@@ -54,12 +55,13 @@ function readAndParseCsv(csvPath) {
     });
 }
 
-readAndParseCsv('./csv/csgo_stats100816.csv').then(lines => {
+readAndParseCsv('./csv/csgostats_102216.csv').then(lines => {
     checkHeadings(lines.shift());
-    
+
     const games = makeGames(lines);
-    
+
     printRecordBasedOnAdr(games);
+    printRecordBasedOnMaps(games);
     printRecordBasedOnFriends(games);
 }).catch(err => console.log(err));
 
