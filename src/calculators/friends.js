@@ -1,35 +1,34 @@
 import Record from '../record';
 
-export const printRecordBasedOnFriends = games => print(calculateRecordBasedOnFriends(games));
+export const printRecordBasedOnIndividualFriends =
+    individualFriendsToGamesMap => print(
+        'Record based on individual friends',
+        calculateRecordsBasedOnFriends(individualFriendsToGamesMap)
+    );
 
-function calculateRecordBasedOnFriends(games) {
-    const recordBasedOnFriends = {};
+export const printRecordBasedOnFriendCombinations =
+    friendCombinationsToGamesMap => print(
+        'Record based on friend combinations',
+        calculateRecordsBasedOnFriends(friendCombinationsToGamesMap)
+    );
 
-    games.forEach(game => {
-        game.friends.forEach(friend => {
-            if (!recordBasedOnFriends.hasOwnProperty(friend)) {
-                recordBasedOnFriends[friend] = new Record();
-            }
+function calculateRecordsBasedOnFriends(friendMap) {
+    const recordBasedOnFriends = Object.create(null);
 
-            recordBasedOnFriends[friend].update(game.outcome);
-        });
+    Object.keys(friendMap).forEach(friend => {
+        const games = friendMap[friend];
+        const record = new Record();
 
-        if (game.isPlayedWithMultipleFriends()) {
-            const allFriendsInMatch = game.getAllFriendsInMatch();
+        games.forEach(game => record.update(game.outcome));
 
-            if (!recordBasedOnFriends.hasOwnProperty(allFriendsInMatch)) {
-                recordBasedOnFriends[allFriendsInMatch] = new Record();
-            }
-
-            recordBasedOnFriends[allFriendsInMatch].update(game.outcome);
-        }
+        recordBasedOnFriends[friend] = record;
     });
 
     return recordBasedOnFriends;
 }
 
-function print(recordBasedOnFriends) {
-    console.log('\nRecord based on friends');
+function print(string, recordBasedOnFriends) {
+    console.log(`\n${string}`);
     console.log('------------------------');
 
     Object.keys(recordBasedOnFriends).forEach(friends => {

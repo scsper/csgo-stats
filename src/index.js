@@ -3,7 +3,10 @@ import path from 'path';
 import Record from './record';
 import Game from './game';
 import {printRecordBasedOnAdr} from './calculators/adr';
-import {printRecordBasedOnFriends} from './calculators/friends';
+import {
+    printRecordBasedOnIndividualFriends,
+    printRecordBasedOnFriendCombinations
+} from './calculators/friends';
 import {printRecordBasedOnMaps} from './calculators/maps';
 
 const HEADINGS = {
@@ -59,10 +62,75 @@ readAndParseCsv('./csv/csgostats_102216.csv').then(lines => {
     checkHeadings(lines.shift());
 
     const games = makeGames(lines);
+    const individualFriendsToGamesMap = makeIndividualFriendsToGamesMap(games);
+    const friendCombinationsToGamesMap = makeFriendCombinationsToGamesMap(games);
 
     printRecordBasedOnAdr(games);
     printRecordBasedOnMaps(games);
-    printRecordBasedOnFriends(games);
+    printRecordBasedOnIndividualFriends(individualFriendsToGamesMap);
+    printRecordBasedOnFriendCombinations(friendCombinationsToGamesMap);
 }).catch(err => console.log(err));
 
 const makeGames = lines => lines.map(data => new Game(data));
+
+/**
+ * This data captures the record of playing with one friend across all matches.
+ * If A is friends with B, C, and D, and he plays the following games:
+ *
+ * A, B
+ * A, B, C
+ * A, B
+ * A, B, C, D
+ *
+ * The map will look like:
+ * B: 4 games
+ * C: 2 games
+ * D: 1 game
+ */
+const makeIndividualFriendsToGamesMap = games => games.reduce((map, game) => {
+    game.friends.forEach(friend => {
+        if (!map[friend]) {
+            map[friend] = [];
+        }
+
+        map[friend].push(game);
+    });
+
+    return map;
+}, Object.create(null));
+
+/**
+ * This data captures the record of playing with different friend combinations.
+ * If A is friends with B, C, and D, and he plays the following games:
+ *
+ * A, B
+ * A, B, C
+ * A, B
+ * A, B, C, D
+ *
+ * The map will look like:
+ * B: 2 games
+ * B, C: 1 game
+ * B, C, D: 1 game
+ */
+const makeFriendCombinationsToGamesMap = games => games.reduce((map, game) => {
+    let friends = '';
+
+    if (game.isPlayedWithMultipleFriends()) {
+        friends = game.getAllFriendsInMatch();
+    } else {
+        friends = game.friends[0];
+    }
+
+    if (!friends) {
+        return map;
+    }
+
+    if (!map[friends]) {
+        map[friends] = [];
+    }
+
+    map[friends].push(game);
+
+    return map;
+}, Object.create(null));
